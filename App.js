@@ -20,7 +20,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import Paper from "@material-ui/core/Paper";
 import { Select, MenuItem } from "@material-ui/core";
-import { fetchQueryData } from "./Api";
+import { fetchQueryData, setURL } from "./Api";
 import { useState, useEffect } from "react";
 
 const styles = StyleSheet.create({
@@ -77,55 +77,23 @@ const RadioForm = () => {
 
   return (
     <FormControl component="fieldset">
-      <RadioGroup aria-label="" name="SQL" onChange={handleChangeForm} row>
+      <RadioGroup aria-label="" name="SQL" row>
         <FormControlLabel
           id="MySql"
-          value="RedShift"
-          control={<Radio />}
+          value="1"
+          control={<Radio value="1" />}
           label="MySql"
         />
         <FormControlLabel
           id="RedShift"
-          value="MySql"
-          control={<Radio />}
+          value="0"
+          control={<Radio value="0" />}
           label="RedShift"
         />
       </RadioGroup>
     </FormControl>
   );
 };
-
-// const DenseTable = (props) => {
-//   const data = props.data;
-
-//   return (
-//     <TableContainer>
-//       <Table size="small">
-//         <TableHead>
-//           <TableRow>
-//             <TableCell>Dessert (100g serving)</TableCell>
-//             <TableCell align="right">Calories</TableCell>
-//             <TableCell align="right">Fat&nbsp;(g)</TableCell>
-//             <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-//             <TableCell align="right">Protein&nbsp;(g)</TableCell>
-//           </TableRow>
-//         </TableHead>
-//         <TableBody>
-//           {data.map((row) => (
-//             <TableRow key={row.Employee}>
-//               <TableCell component="th" scope="row">
-//                 {row.name}
-//               </TableCell>
-//               <TableCell align="right">{row.calories}</TableCell>
-//               <TableCell align="right">{row.fat}</TableCell>
-//               <TableCell align="right">{row.carbs}</TableCell>
-//               <TableCell align="right">{row.protein}</TableCell>
-//             </TableRow>
-//           ))}
-//         </TableBody>
-//       </Table>
-//     </TableContainer>
-//   );
 
 const searchResult = {
   text: "This is the amazon result",
@@ -141,21 +109,71 @@ const SelectDataBase = () => {
 };
 
 const App = () => {
+  let json1;
   const [values, setValues] = useState({
     query: "",
-    result: {},
+    result: [],
   });
 
   const handleChangeForm = (event) => {
     setValues({ ...values, query: event.target.value });
-    console.log(values);
   };
 
-  let handleSearch = () => {
+  let handleSearch = async () => {
     console.log("I'm here");
-    let data = fetchQueryData(values.query);
-    console.log(data);
-    setValues({ ...values, query: data });
+    json1 = await fetchQueryData(values.query);
+    await setValues({ ...values, result: json1 });
+  };
+
+  let handleClear = () => {
+    location.reload();
+  };
+
+  let column;
+  let tableData = [];
+  if (values.result.length > 0) {
+    tableData = values.result;
+    console.log("This is the output:" + JSON.stringify(values.result));
+    column = Object.keys(tableData[0]);
+  }
+
+  const ThData = () => {
+    if (column != undefined) {
+      return column.map((data) => {
+        // <TableCell align="right">{data}</TableCell>;
+        return (
+          <th
+            style={{ border: "1px solid #dddddd", padding: "8px" }}
+            key={data}
+          >
+            {data}
+          </th>
+        );
+      });
+    }
+  };
+
+  const tdData = () => {
+    const [rows, setRows] = useState([]);
+    useEffect(() => {
+      return rows + 1;
+    }, [rows]);
+    if (tableData.length > 0) {
+      return tableData.map((data) => {
+        return (
+          <tr style={{ border: "1px #dddddd", padding: "8px" }}>
+            {column.map((v) => {
+              return <td>{data[v]}</td>;
+            })}
+          </tr>
+          // <TableRow>
+          //   {column.map((v) => {
+          //     return <TableCell align="right">{data[v]}</TableCell>;
+          //   })}
+          // </TableRow>
+        );
+      });
+    }
   };
 
   return (
@@ -172,6 +190,9 @@ const App = () => {
       >
         <SelectDataBase></SelectDataBase>
         <RadioForm></RadioForm>
+        <Button color="primary" onClick={handleClear}>
+          Clear
+        </Button>
         <TextInput
           defaultValue=""
           style={{
@@ -184,20 +205,23 @@ const App = () => {
           }}
           onChange={handleChangeForm}
         />
-        <Button color="primary" OnClick={handleSearch}>
+        <Button color="primary" onClick={handleSearch}>
           Search
         </Button>
-        <TextArea
-          text={searchResult}
-          style={{
-            marginTop: 20,
-            width: "500px",
-            height: "250px",
-            borderRadius: "8px",
-            backgroundColor: "#e6e6ff",
-            border: "2px",
-          }}
-        ></TextArea>
+        <table className="table">
+          <thead>
+            <tr>{ThData()}</tr>
+          </thead>
+          <tbody>{tdData()}</tbody>
+        </table>
+        {/* <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>{ThData()}</TableRow>
+            </TableHead>
+            <TableBody>{tdData()}</TableBody>
+          </Table>
+        </TableContainer> */}
       </View>
     </ScrollView>
   );
